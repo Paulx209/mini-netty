@@ -10,6 +10,8 @@ import java.net.Socket;
 /**
  * 简单的 BIO（阻塞 I/O）服务端示例。
  * 单线程串行处理连接与请求，便于学习最基础的 Socket 通信流程。
+ *  @Author: sonicge
+ *  @CreateTime: 2026-02-25
  */
 public class SimpleBioServer {
     /** 服务端监听端口。 */
