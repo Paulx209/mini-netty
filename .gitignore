@@ -63,3 +63,4 @@ Thumbs.db
 # Build outputs
 build/
 out/
+.ace-tool/

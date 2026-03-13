@@ -1,118 +1,110 @@
 package com.getian.netty.example.bio;
 
-import javax.swing.*;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
- * Bio 阻塞Io 服务器？
- *
- * @Author: sonicge
- * @CreateTime: 2026-02-24
+ * 简单的 BIO（阻塞 I/O）服务端示例。
+ * 单线程串行处理连接与请求，便于学习最基础的 Socket 通信流程。
  */
-
 public class SimpleBioServer {
+    /** 服务端监听端口。 */
     private final int port;
+
+    /** 服务端 Socket，负责接收客户端连接。 */
     private ServerSocket serverSocket;
+
+    /** 服务运行状态，供多线程可见。 */
     private volatile boolean running;
 
     /**
-     * 创建一个 BIO 服务端
+     * 创建一个服务实例。
      *
-     * @param port 监听端口号
+     * @param port 监听端口
      */
     public SimpleBioServer(int port) {
         this.port = port;
     }
 
     /**
-     * 开始监听port端口
+     * 启动服务并阻塞监听客户端连接。
      *
-     * @throws IOException
+     * @throws IOException 端口绑定失败或 I/O 异常
      */
     public void start() throws IOException {
         serverSocket = new ServerSocket(port);
         running = true;
-        System.out.println("[SimpleBioServer] 服务器启动，监听端口号：" + port);
+        System.out.println("[SimpleBioServer] Server started on port: " + port);
         while (running) {
             try {
+                // BIO 模型：accept 会阻塞当前线程直到有客户端连接。
                 Socket clientSocket = serverSocket.accept();
-                System.out.println("[SimpleBioServer] 客户端连接: " + clientSocket.getRemoteSocketAddress());
-                //处理客户端请求 （阻塞当前线程）
+                System.out.println("[SimpleBioServer] Client connected: " + clientSocket.getRemoteSocketAddress());
+                // 串行处理：当前连接处理完才会接收下一个连接。
                 handleClient(clientSocket);
             } catch (IOException e) {
                 if (running) {
-                    System.err.println("[SimpleBioServer] 接受连接失败: " + e.getMessage());
+                    System.err.println("[SimpleBioServer] Accept failed: " + e.getMessage());
                 }
             }
         }
     }
 
     /**
-     * 处理单个客户端连接
+     * 处理单个客户端连接。
      *
-     * @param clientSocket
+     * @param clientSocket 客户端 Socket
+     * @throws IOException 读写异常
      */
-    private void handleClient(Socket clientSocket) {
-        try(
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                PrintWriter printWriter =new PrintWriter(clientSocket.getOutputStream())
-        ){
-            String line ;
-            while ((line = bufferedReader.readLine())!=null){
-                System.out.println("[SimpleBioServer] 收到消息: " + line);
-                //收到响应
-                String response = "hello mini-netty";
-                printWriter.println(response);
-                System.out.println("[SimpleBioServer] 收到消息: " + line);
-            }
-        }catch(IOException e){
-            System.err.println("[SimpleBioServer] 处理客户端失败: " + e.getMessage());
-        }finally {
-            try {
-                clientSocket.close();
-                System.out.println("[SimpleBioServer] 客户端断开连接");
-            } catch (IOException e) {
-                //
+    private void handleClient(Socket clientSocket) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+             PrintWriter writer = new PrintWriter(clientSocket.getOutputStream())) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println("[SimpleBioServer] Received: " + line);
+                String response = "hello,mini-netty";
+                writer.println(response);
+                writer.flush();
+                System.out.println("[SimpleBioServer] Sent: " + response);
             }
         }
     }
 
     /**
-     * 在后台线程启动服务端
+     * 在后台线程启动服务。
      *
-     * @return
+     * @return 启动服务的线程对象
      */
     public Thread startInBackGround() {
         Thread thread = new Thread(() -> {
-            //线程里面执行启动服务端的功能
             try {
                 start();
             } catch (IOException e) {
-                if (running) {
-                    System.err.println("[SimpleBioServer] 服务端异常: " + e.getMessage());
-                }
+                running = false;
+                System.err.println("[SimpleBioServer] Server exception: " + e.getMessage());
             }
         }, "bio-server");
-        //将线程设置为守护线程，如果主线程停止的话，该线程就会自动停止，不会执行。
         thread.setDaemon(true);
-
+        thread.start();
         return thread;
     }
 
     /**
-     * 停止服务端
+     * 停止服务。
+     * 通过关闭 ServerSocket 来中断可能阻塞在 accept 的线程。
      */
     public void stop() {
         running = false;
-        //如果serverSocket不为null，并且没有被关闭
         if (serverSocket != null && !serverSocket.isClosed()) {
             try {
                 serverSocket.close();
-                System.out.println("[SimpleBioServer] 服务端已停止");
+                System.out.println("[SimpleBioServer] Server stopped");
             } catch (IOException e) {
-                System.err.println("[SimpleBioServer] 关闭服务端失败: " + e.getMessage());
+                System.err.println("[SimpleBioServer] Stop failed: " + e.getMessage());
             }
         }
     }
@@ -126,9 +118,8 @@ public class SimpleBioServer {
     }
 
     /**
-     * 主方法 - 启动服务端
-     * @param args  命令行参数（可选：端口号，默认 8080）
-     * @throws IOException 如果启动失败
+     * 启动入口。
+     * 可选参数：第一个参数为端口号，默认 8080。
      */
     public static void main(String[] args) throws IOException {
         int port = args.length > 0 ? Integer.parseInt(args[0]) : 8080;
