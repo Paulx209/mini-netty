@@ -2,10 +2,12 @@ package com.getian.netty.example.nio;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -57,8 +59,11 @@ public class NioServer {
                 try {
                     if (key.isAcceptable()) {
                         handleAccept(key);
+                    } else if (key.isReadable()) {
+                        handleRead(key);
+                    } else if (key.isWritable()) {
+                        handleWrite(key);
                     }
-                    //todo 处理读取和写入事件
                 } catch (Exception e) {
                     System.err.println("[NioServer] 处理事件失败: " + e.getMessage());
                     key.cancel();
@@ -85,6 +90,62 @@ public class NioServer {
             System.out.println("[NioServer] 接受连接: " + clientChannel.getRemoteAddress());
         }
     }
+
+    /**
+     * 处理Read事件 读取channel管道里面发送的数据（可以使用buffer来读取）
+     *
+     * @param key
+     */
+    public void handleRead(SelectionKey key) throws IOException {
+        SocketChannel clientReadChannel = (SocketChannel) key.channel();
+        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        int bytesRead = clientReadChannel.read(buffer);
+
+        if (bytesRead == -1) {
+            //客户端关闭连接
+            System.out.println("[NioServer] 客户端关闭连接: " + clientReadChannel.getRemoteAddress());
+            key.cancel();
+            clientReadChannel.close();
+            return;
+        }
+
+        if (bytesRead > 0) {
+            buffer.flip();
+            byte[] data = new byte[buffer.remaining()];
+            buffer.get(data);
+            String message = new String(data, StandardCharsets.UTF_8);
+            System.out.println("[NioServer] 收到消息: " + message);
+
+            //通过key的附加信息 来作为响应数据
+            String response = "hello,mini-netty\n";
+            key.attach(ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
+
+            //将key的事件类型由read 修改为 write
+            key.interestOps(SelectionKey.OP_WRITE);
+        }
+    }
+
+    /**
+     * 处理 WRITE 事件 - 发送响应数据
+     *
+     * @param key SelectionKey
+     */
+    public void handleWrite(SelectionKey key) throws IOException {
+        SocketChannel clientChannel = (SocketChannel) key.channel();
+        ByteBuffer buffer = (ByteBuffer) key.attachment();
+        if (buffer != null) {
+            clientChannel.write(buffer);
+            System.out.println("[NioServer] 发送响应: hello, mini-netty");
+
+            //如果buffer没有剩余内容
+            if (!buffer.hasRemaining()) {
+                //写入完成 切换为Read事件
+                key.attach(null);
+                key.interestOps(SelectionKey.OP_READ);
+            }
+        }
+    }
+
 
     /**
      * 在后台线程启动服务端
