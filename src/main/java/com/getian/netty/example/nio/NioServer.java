@@ -49,13 +49,25 @@ public class NioServer {
         while (running) {
             //2.1 检查是否有就绪的channel
             int select = selector.select(1000);
+
+            if (!running || !selector.isOpen()) {
+                break;
+            }
+
             if (select == 0) continue;
 
             //2.2 如果有的话
             Set<SelectionKey> selectionKeys = selector.selectedKeys();
             Iterator<SelectionKey> iterator = selectionKeys.iterator();
-            while (iterator.hasNext()) {
+            while (iterator.hasNext() && running) {
                 SelectionKey key = iterator.next();
+                // 先移除再处理，避免并发修改异常
+                iterator.remove();
+
+                if (!key.isValid()) {
+                    continue;
+                }
+
                 try {
                     if (key.isAcceptable()) {
                         handleAccept(key);
@@ -69,7 +81,6 @@ public class NioServer {
                     key.cancel();
                 }
             }
-            iterator.remove();
         }
     }
 
