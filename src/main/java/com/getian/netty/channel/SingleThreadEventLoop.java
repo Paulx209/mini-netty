@@ -91,7 +91,7 @@ public abstract class SingleThreadEventLoop implements EventLoop {
     }
 
     /**
-     * 执行任务
+     * 添加任务
      *
      * 提交一个任务到eventLoop执行
      * 如果当前线程是 EventLoop 线程，任务可能会立即执行；
@@ -102,7 +102,7 @@ public abstract class SingleThreadEventLoop implements EventLoop {
     @Override
     public void execute(Runnable task) {
         if (task == null) {
-            throw new NullPointerException("task");
+            throw new NullPointerException("task is null");
         }
         taskQueue.offer(task);
         if (!inEventLoop()) {

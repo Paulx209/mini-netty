@@ -63,7 +63,8 @@ public class NioEventLoop extends SingleThreadEventLoop {
                     processSelectedKeys();
                 }
                 //2.2 然后执行对应的task任务
-                runAllTasks();
+                int taskCount = runAllTasks();
+                System.out.println("该轮循环执行任务: " + taskCount + "次");
             } catch (IOException e) {
                 System.err.println("[NioEventLoop] 事件循环异常: " + e.getMessage());
             }
