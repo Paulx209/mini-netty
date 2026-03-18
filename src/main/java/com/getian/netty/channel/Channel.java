@@ -23,11 +23,9 @@ public interface Channel {
     ChannelId id();
 
     /**
-     * 返回关联的EventLoop
+     * EventLoop可以理解成对Selector封装了一层，用来监控eventLoop的
      *
      * Channel 的所有 I/O 操作都在此 EventLoop 的线程中执行。
-     *
-     *
      * @return 关联的 EventLoop，如果未注册返回 null
      */
     EventLoop eventLoop();

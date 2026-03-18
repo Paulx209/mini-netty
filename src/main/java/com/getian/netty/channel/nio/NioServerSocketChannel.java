@@ -1,0 +1,142 @@
+package com.getian.netty.channel.nio;
+
+
+import com.getian.netty.channel.ChannelFuture;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+
+/**
+ * 服务端 NIO Channel 实现
+ * NioServerSocketChannel 封装了 Java NIO 的 ServerSocketChannel，
+ * 一、用于接受客户端连接。主要功能：
+ *  1.绑定到指定端口
+ *  2.接收客户端连接
+ *  3.给每个新连接创建NioSocketChannel
+ *
+ * 二、 典型使用流程：
+ * NioServerSocketChannel serverChannel = new NioServerSocketChannel();
+ * serverChannel.bind(new InetSocketAddress(8080));
+ *
+ *
+ * @see ServerSocketChannel
+ * @see NioSocketChannel
+ */
+public class NioServerSocketChannel extends AbstractNioChannel {
+
+    /**
+     * 只有一个构造函数，因为
+     */
+    public NioServerSocketChannel() {
+        super(null, newSocket(), SelectionKey.OP_ACCEPT);
+    }
+
+    /**
+     * 创建新的 ServerSocketChannel
+     *
+     * @return 新的 ServerSocketChannel
+     */
+    private static ServerSocketChannel newSocket() {
+        try {
+            return ServerSocketChannel.open();
+        } catch (IOException e) {
+            throw new RuntimeException("无法创建 ServerSocketChannel", e);
+        }
+    }
+
+    /**
+     * 获取底层的 ServerSocketChannel
+     *
+     * @return ServerSocketChannel
+     */
+    @Override
+    protected ServerSocketChannel javaChannel() {
+        return (ServerSocketChannel) super.javaChannel();
+    }
+
+    @Override
+    public boolean isActive() {
+        return isOpen() && javaChannel().socket().isBound();
+    }
+
+    @Override
+    protected SocketAddress localAddress0() throws Exception {
+        return javaChannel().getLocalAddress();
+    }
+
+    @Override
+    protected SocketAddress remoteAddress0() throws Exception {
+        // ServerSocketChannel 没有远程地址
+        return null;
+    }
+
+    /**
+     * 绑定到指定地址
+     *
+     * @param localAddress 本地地址
+     * @return 绑定操作的 Future
+     */
+    public ChannelFuture bind(SocketAddress localAddress) {
+        try {
+            javaChannel().bind(localAddress);
+            System.out.println("[NioServerSocketChannel] 绑定到 " + localAddress);
+
+            // 触发 channelActive 事件
+            if (isRegistered()) {
+                pipeline().fireChannelActive();
+            }
+
+            return newSucceededFuture();
+        } catch (IOException e) {
+            System.err.println("[NioServerSocketChannel] 绑定失败: " + e.getMessage());
+            return newFailedFuture(e);
+        }
+    }
+
+    /**
+     * 绑定到指定端口
+     *
+     * @param port 端口号
+     * @return 绑定操作的 Future
+     */
+    public ChannelFuture bind(int port) {
+        return bind(new InetSocketAddress(port));
+    }
+
+    @Override
+    protected void doRead() {
+        // 接受新的客户端连接
+        try {
+            SocketChannel socketChannel = javaChannel().accept();
+            if (socketChannel != null) {
+                System.out.println("[NioServerSocketChannel] 接受连接: " +
+                        socketChannel.getRemoteAddress());
+
+                // 创建 NioSocketChannel
+                NioSocketChannel childChannel = new NioSocketChannel(this, socketChannel);
+
+                // 触发 channelRead 事件，传递新的子 Channel
+                pipeline().fireChannelRead(childChannel);
+            }
+        } catch (IOException e) {
+            System.err.println("[NioServerSocketChannel] 接受连接失败: " + e.getMessage());
+            pipeline().fireExceptionCaught(e);
+        }
+    }
+
+    @Override
+    protected void doWrite(Object msg) throws Exception {
+        // ServerSocketChannel 不支持写操作
+        throw new UnsupportedOperationException("ServerSocketChannel 不支持写操作");
+    }
+
+    @Override
+    protected void doClose() throws Exception {
+        System.out.println("[NioServerSocketChannel] 关闭服务端通道");
+        super.doClose();
+    }
+}

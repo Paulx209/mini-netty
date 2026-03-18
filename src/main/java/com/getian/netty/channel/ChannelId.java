@@ -1,6 +1,6 @@
 package com.getian.netty.channel;
 
-public interface ChannelId {
+public interface ChannelId extends Comparable<ChannelId> {
     /**
      * 返回 Channel ID 的短格式字符串
      * 短格式适合日志输出，通常是 ID 的哈希值。
