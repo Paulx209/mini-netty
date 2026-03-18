@@ -18,7 +18,7 @@ public interface ChannelPromise extends ChannelFuture{
      *
      * @return 如果成功标记返回 true，如果已经完成返回 false
      */
-    ChannelPromise trySuccess();
+    boolean trySuccess();
 
     /**
      * 尝试标记操作失败
@@ -35,6 +35,4 @@ public interface ChannelPromise extends ChannelFuture{
     @Override
     ChannelPromise sync() throws InterruptedException;
 
-    @Override
-    ChannelPromise await() throws InterruptedException;
 }
