@@ -1,10 +1,10 @@
 package com.getian.netty.channel;
 
 /**
- * 入站事件处理器接口
- *  处理从网络读取的数据和连接状态变化事件。
- *  入站事件流向（从网络到应用）：
- *  Network → channelActive → channelRead → channelReadComplete → channelInactive
+ *  入站事件处理器接口
+ *      处理从网络读取的数据和连接状态变化事件。
+ *      入站事件流向（从网络到应用）：
+ *          Network → channelActive → channelRead → channelReadComplete → channelInactive
  *
  * @Author: sonicge
  * @CreateTime: 2026-03-15

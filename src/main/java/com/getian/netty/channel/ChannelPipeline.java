@@ -1,12 +1,13 @@
 package com.getian.netty.channel;
 
+import java.util.List;
+
 /**
  * ChannelHandler容器，负责事件的分发
  * ChannelPipeline 是一个双向链表，包含了处理入站和出站事件的 Handler。
  * 每个 Channel 都有一个 Pipeline，事件会按顺序通过 Pipeline 中的 Handler。
  */
 public interface ChannelPipeline {
-
     /**
      * 在链尾添加 Handler
      *
@@ -31,6 +32,45 @@ public interface ChannelPipeline {
      */
     ChannelPipeline remove(ChannelHandler handler);
 
+    /**
+     * 移除指定名称的 Handler
+     *
+     * @param name Handler 名称
+     * @return 被移除的 Handler
+     */
+    ChannelHandler remove(String name);
+
+    /**
+     * 获取指定名称的 Handler
+     *
+     * @param name Handler 名称
+     * @return Handler 实例，如果不存在返回 null
+     */
+    ChannelHandler get(String name);
+
+    /**
+     * 获取指定名称的 Context
+     *
+     * @param name Handler 名称
+     * @return ChannelHandlerContext，如果不存在返回 null
+     */
+    ChannelHandlerContext context(String name);
+
+    /**
+     * 获取指定 Handler 的 Context
+     *
+     * @param handler Handler 实例
+     * @return ChannelHandlerContext，如果不存在返回 null
+     */
+    ChannelHandlerContext context(ChannelHandler handler);
+
+    /**
+     * 获取所有 Handler 的名称
+     *
+     * @return Handler 名称列表
+     */
+    List<String> names();
+
 
     /**
      * 获取关联的 Channel
@@ -40,12 +80,35 @@ public interface ChannelPipeline {
     Channel channel();
 
     /**
+     * 触发 channelRegistered 事件
+     *
+     * @return this，便于链式调用
+     */
+    ChannelPipeline fireChannelRegistered();
+
+    /**
+     * 触发 channelUnregistered 事件
+     *
+     * @return this，便于链式调用
+     */
+    ChannelPipeline fireChannelUnregistered();
+
+
+
+    /**
      * 触发 channelRead 事件
      *
      * @param msg 读取到的消息
      * @return this，便于链式调用
      */
     ChannelPipeline fireChannelRead(Object msg);
+
+    /**
+     * 触发 channelReadComplete 事件
+     *
+     * @return this，便于链式调用
+     */
+    ChannelPipeline fireChannelReadComplete();
 
 
     /**

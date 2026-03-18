@@ -10,10 +10,8 @@ import java.net.SocketAddress;
  *  Application → write → flush → Network
  *  Application → bind/connect/disconnect/close → Network
  *
- *
- *
  */
-public interface ChannelOutboundHandler {
+public interface ChannelOutboundHandler extends  ChannelHandler{
     /**
      * 绑定到本地地址时调用
      *
