@@ -52,7 +52,9 @@ public abstract class SingleThreadEventLoop implements EventLoop {
 
     public SingleThreadEventLoop(EventLoopGroup parent) {
         this.parent = parent;
+        //存储普通任务
         this.taskQueue = new ConcurrentLinkedDeque<>();
+        //存储定时任务
         this.scheduledTaskQueue = new PriorityQueue<>();
     }
 
