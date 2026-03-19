@@ -32,6 +32,11 @@ public abstract class AbstractChannel implements Channel {
     private final ChannelPipeline pipeline;
 
     /**
+     * Channel配置
+     */
+    private final ChannelConfig config;
+
+    /**
      * 关联的 EventLoop
      */
     private volatile EventLoop eventLoop;
@@ -65,6 +70,7 @@ public abstract class AbstractChannel implements Channel {
         this.parent = parent;
         this.id = newId();
         this.pipeline = newChannelPipeline();
+        this.config = newChannelConfig();
     }
 
     /**
@@ -85,6 +91,14 @@ public abstract class AbstractChannel implements Channel {
         return new DefaultChannelPipeline(this);
     }
 
+    /**
+     * 创建新的ChannelConfig
+     * @return 新的ChannelConfig
+     */
+    protected ChannelConfig newChannelConfig(){
+        return new DefaultChannelConfig(this);
+    }
+
     @Override
     public ChannelId id() {
         return id;
@@ -98,6 +112,11 @@ public abstract class AbstractChannel implements Channel {
     @Override
     public ChannelPipeline pipeline() {
         return pipeline;
+    }
+
+    @Override
+    public ChannelConfig config() {
+        return config;
     }
 
     @Override
@@ -200,6 +219,12 @@ public abstract class AbstractChannel implements Channel {
     }
 
     @Override
+    public Channel read() {
+        pipeline.read();
+        return this;
+    }
+
+    @Override
     public ChannelFuture close() {
         if (closed.compareAndSet(false, true)) {
             if (eventLoop != null && eventLoop.inEventLoop()) {
@@ -212,6 +237,7 @@ public abstract class AbstractChannel implements Channel {
         }
         return newSucceededFuture();
     }
+
 
     /**
      * 实际的关闭操作

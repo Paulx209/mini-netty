@@ -7,8 +7,8 @@ package com.getian.netty.channel;
  * 它关联的 Handler
  * 它所在的 Pipeline
  * 链表中的前后节点
- *
- *
+ * <p>
+ * <p>
  * 学习要点：
  * 1.事件通过 Context 在链表中传递
  * 2.fireXxx() 方法触发下一个入站 Handler
@@ -119,12 +119,12 @@ public abstract class AbstractChannelHandlerContext implements ChannelHandlerCon
     }
 
 
-
     // ========== 入站事件传递方法 ==========
 
 
     /**
      * 1. 处理channelRegistered方法
+     *
      * @return ChannelHandlerContext
      */
     @Override
@@ -155,6 +155,7 @@ public abstract class AbstractChannelHandlerContext implements ChannelHandlerCon
 
     /**
      * 2. 处理 channelUnregistered方法
+     *
      * @return ctx
      */
     @Override
@@ -289,6 +290,7 @@ public abstract class AbstractChannelHandlerContext implements ChannelHandlerCon
         }
     }
 
+
     // ========== 出站操作方法 ==========
 
     @Override
@@ -353,6 +355,21 @@ public abstract class AbstractChannelHandlerContext implements ChannelHandlerCon
             }
         }
         return promise;
+    }
+
+    @Override
+    public ChannelHandlerContext read() {
+        //寻找出站的context
+        AbstractChannelHandlerContext ctx = findContextOutbound();
+        if (ctx.handler() instanceof ChannelOutboundHandler) {
+            try {
+                ChannelOutboundHandler outHandler = (ChannelOutboundHandler) ctx.handler();
+                outHandler.read(ctx);
+            } catch (Exception e) {
+                invokeExceptionCaught(e);
+            }
+        }
+        return this;
     }
 
     @Override
