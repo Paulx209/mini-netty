@@ -14,14 +14,13 @@ import java.nio.channels.SocketChannel;
  * 服务端 NIO Channel 实现
  * NioServerSocketChannel 封装了 Java NIO 的 ServerSocketChannel，
  * 一、用于接受客户端连接。主要功能：
- *  1.绑定到指定端口
- *  2.接收客户端连接
- *  3.给每个新连接创建NioSocketChannel
- *
+ * 1.绑定到指定端口
+ * 2.接收客户端连接
+ * 3.给每个新连接创建NioSocketChannel
+ * <p>
  * 二、 典型使用流程：
  * NioServerSocketChannel serverChannel = new NioServerSocketChannel();
  * serverChannel.bind(new InetSocketAddress(8080));
- *
  *
  * @see ServerSocketChannel
  * @see NioSocketChannel
@@ -107,6 +106,7 @@ public class NioServerSocketChannel extends AbstractNioChannel {
         return bind(new InetSocketAddress(port));
     }
 
+
     @Override
     protected void doRead() {
         // 接受新的客户端连接
@@ -134,9 +134,25 @@ public class NioServerSocketChannel extends AbstractNioChannel {
         throw new UnsupportedOperationException("ServerSocketChannel 不支持写操作");
     }
 
+
     @Override
     protected void doClose() throws Exception {
         System.out.println("[NioServerSocketChannel] 关闭服务端通道");
         super.doClose();
+    }
+
+    @Override
+    protected UnSafe newUnsafe() {
+        return new NioServerSocketChannelUnsafe();
+    }
+
+    @Override
+    protected void doBind(SocketAddress localAddress) throws Exception {
+        javaChannel().bind(localAddress);
+        System.out.println("[NioServerSocketChannel] 绑定到 " + localAddress);
+    }
+
+    private class NioServerSocketChannelUnsafe extends AbstractUnsafe {
+
     }
 }

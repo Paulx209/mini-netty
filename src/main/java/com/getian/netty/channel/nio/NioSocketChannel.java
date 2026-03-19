@@ -233,5 +233,31 @@ public class NioSocketChannel extends AbstractNioChannel {
         super.doClose();
     }
 
+    @Override
+    protected void doBind(SocketAddress localAddress) throws Exception {
+        javaChannel().bind(localAddress);
+    }
+
+    @Override
+    protected UnSafe newUnsafe() {
+        return new NioSocketChannelUnsafe();
+    }
+
+    private class NioSocketChannelUnsafe extends AbstractNioUnsafe {
+        @Override
+        protected void doConnect(SocketAddress remoteAddress, SocketAddress localAddress) throws Exception {
+            if (localAddress != null) {
+                javaChannel().bind(localAddress);
+            }
+            boolean connectd = javaChannel().connect(remoteAddress);
+            if (!connectd) {
+                //连接进行中，需要等待OP_CONNECT事件
+                SelectionKey key = selectionKey();
+                if (key != null) {
+                    key.interestOps(key.interestOps() | SelectionKey.OP_CONNECT);
+                }
+            }
+        }
+    }
 
 }

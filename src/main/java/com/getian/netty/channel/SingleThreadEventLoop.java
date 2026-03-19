@@ -70,7 +70,7 @@ public abstract class SingleThreadEventLoop implements EventLoop {
 
     /**
      * 获取下一个员工
-     *
+     * <p>
      * 但是由于EventLoop继承了Group接口，也就是组建了只有一个员工的团队
      * 所以每次派人出来干活的时候，只能派自己
      *
@@ -98,7 +98,7 @@ public abstract class SingleThreadEventLoop implements EventLoop {
 
     /**
      * 添加任务
-     *
+     * <p>
      * 提交一个任务到eventLoop执行
      * 如果当前线程是 EventLoop 线程，任务可能会立即执行；
      * 否则任务会被添加到任务队列，等待 EventLoop 线程执行。
@@ -111,9 +111,22 @@ public abstract class SingleThreadEventLoop implements EventLoop {
             throw new NullPointerException("task is null");
         }
         taskQueue.offer(task);
+
+        //确保事件循环已启动
+        startIfNeed();
+
         if (!inEventLoop()) {
             //为什么这里需要wakeup();因为eventLoop的这个线程还在select()方法里面阻塞执行，对于外部任务的到来，他不知道，就必须要wakeup从阻塞状态唤醒它，然后处理queue中的任务
             wakeup();
+        }
+    }
+
+    /**
+     * 如果事件循环没有启动 则先启动
+     */
+    private void startIfNeed(){
+        if(!running.get()){
+            start();
         }
     }
 

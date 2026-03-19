@@ -1,27 +1,27 @@
 package com.getian.netty.channel.nio;
 
 
-
 import com.getian.netty.channel.AbstractChannel;
 import com.getian.netty.channel.Channel;
 import com.getian.netty.channel.EventLoop;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 
 /**
  * NIO Channel 的抽象基类
- *
+ * <p>
  * AbstractNioChannel 封装了 NIO SelectableChannel 的通用操作：
- *  1.管理层的selectableChannel
- *  2.处理与Selector的注册
- *  3.管理SelectionKey和感兴趣的操作
- *
+ * 1.管理层的selectableChannel
+ * 2.处理与Selector的注册
+ * 3.管理SelectionKey和感兴趣的操作
+ * <p>
  * 学习要点：
- *  1.SelectableChannel 是 NIO 可选择通道的抽象
- *  2.每个通道只能注册到一个 Selector
- *  3.interestOps 控制关注哪些 I/O 事件
+ * 1.SelectableChannel 是 NIO 可选择通道的抽象
+ * 2.每个通道只能注册到一个 Selector
+ * 3.interestOps 控制关注哪些 I/O 事件
  *
  * @see SelectableChannel
  * @see SelectionKey
@@ -46,8 +46,8 @@ public abstract class AbstractNioChannel extends AbstractChannel {
     /**
      * 构造函数
      *
-     * @param parent        父 Channel
-     * @param ch            底层的 SelectableChannel
+     * @param parent         父 Channel
+     * @param ch             底层的 SelectableChannel
      * @param readInterestOp 读操作的 interest op（如 OP_ACCEPT, OP_READ）
      */
     protected AbstractNioChannel(Channel parent, SelectableChannel ch, int readInterestOp) {
@@ -148,6 +148,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
      */
     protected abstract void doRead();
 
+
     /**
      * 执行实际的写操作
      *
@@ -155,4 +156,21 @@ public abstract class AbstractNioChannel extends AbstractChannel {
      * @throws Exception 如果写入失败
      */
     protected abstract void doWrite(Object msg) throws Exception;
+
+    @Override
+    protected void doBind(java.net.SocketAddress localAddress) throws Exception {
+        // 子类实现具体的绑定逻辑
+        throw new UnsupportedOperationException("绑定操作需要子类实现");
+    }
+
+    @Override
+    protected abstract UnSafe newUnsafe();
+
+    protected abstract class AbstractNioUnsafe extends AbstractUnsafe {
+        @Override
+        protected void doConnect(SocketAddress remoteAddress, SocketAddress localAddress) throws Exception {
+            // 子类实现具体的连接逻辑
+            throw new UnsupportedOperationException("连接操作需要子类实现");
+        }
+    }
 }
