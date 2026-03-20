@@ -114,6 +114,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             curLastContext.next = newCtx;
             newCtx.prev = curLastContext;
             newCtx.next = tail;
+            tail.prev = newCtx;
 
             name2ctx.put(name, newCtx);
         }
