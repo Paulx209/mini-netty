@@ -31,16 +31,12 @@ public abstract class ByteBuf implements ReferenceCounted {
      */
     public abstract int capacity();
 
-    @Override
-    public int refCnt() {
-        return 0;
-    }
 
     /**
      * 调整缓冲区容量
      *
      * @param newCapacity 新容量
-     * @return
+     * @return ByteBuf
      */
     public abstract ByteBuf capacity(int newCapacity);
 
@@ -83,7 +79,7 @@ public abstract class ByteBuf implements ReferenceCounted {
      * @param writerIndex 新的写索引
      * @return this
      */
-    public abstract ByteBuf writerInex(int writerIndex);
+    public abstract ByteBuf writerIndex(int writerIndex);
 
     /**
      * 同时设置读写索引
@@ -495,22 +491,14 @@ public abstract class ByteBuf implements ReferenceCounted {
 
 
     @Override
-    public ReferenceCounted retain(int increment) {
-        return null;
-    }
+    public abstract ReferenceCounted retain(int increment);
 
     @Override
-    public boolean release() {
-        return false;
-    }
+    public abstract boolean release();
 
     @Override
-    public ReferenceCounted retain() {
-        return null;
-    }
+    public abstract ReferenceCounted retain();
 
     @Override
-    public boolean release(int decrement) {
-        return false;
-    }
+    public abstract boolean release(int decrement);
 }
