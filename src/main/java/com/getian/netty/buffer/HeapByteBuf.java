@@ -17,9 +17,8 @@ import java.nio.ByteBuffer;
  * @CreateTime: 2026-03-21
  */
 
-public class HeapByteBuf extends AbstractByteBuf {
+public class HeapByteBuf extends AbstractReferenceCountedByteBuf {
     private byte[] array;
-    private int refCnt = 1;
 
     /**
      * @param initialCapacity 初始化容量
@@ -57,22 +56,25 @@ public class HeapByteBuf extends AbstractByteBuf {
 
     @Override
     public ByteBuf capacity(int newCapacity) {
-        //如果newCapacity 大于 最大容量的话
+        //1.如果newCapacity 大于 最大容量的话
         if (newCapacity < 0 || newCapacity > maxCapacity()) {
             throw new IllegalArgumentException(String.format(
                     "newCapacity: %d (expected: 0 <= newCapacity <= maxCapacity(%d))",
                     newCapacity, maxCapacity()));
         }
+        //2.如果newCapacity == oldCapacity的话 就不需要扩容了
         int oldCapacity = array.length;
         if (oldCapacity == newCapacity) {
             return this;
         }
 
+        //3.修改底层的byte数组
         byte[] newArray = new byte[newCapacity];
+        //newCapacity可能比olcCapacity小 -> 缩容 所以这里要取一个最小值
         System.arraycopy(array, 0, newArray, 0, Math.min(oldCapacity, newCapacity));
         this.array = newArray;
 
-        //重新更新读写的指针  因为这个newCapacity有可能是变小的 所以可能是缩容
+        //4.重新更新读写的指针  因为这个newCapacity有可能是变小的 所以可能是缩容
         if (readerIndex > newCapacity) {
             readerIndex = newCapacity;
             writerIndex = newCapacity;
@@ -97,7 +99,6 @@ public class HeapByteBuf extends AbstractByteBuf {
     public int arrayOffset() {
         return 0;
     }
-
 
 
     // =====================
@@ -146,15 +147,15 @@ public class HeapByteBuf extends AbstractByteBuf {
 
     @Override
     public ByteBuf setByte(int index, int value) {
-        checkIndex(index,1);
-        array[index] = (byte)value;
+        checkIndex(index, 1);
+        array[index] = (byte) value;
         return this;
     }
 
     @Override
     public ByteBuf setShort(int index, int value) {
-        checkIndex(index,2);
-        array[index] = (byte)(value>>>8);
+        checkIndex(index, 2);
+        array[index] = (byte) (value >>> 8);
         array[index + 1] = (byte) value;
         return this;
     }
@@ -185,23 +186,24 @@ public class HeapByteBuf extends AbstractByteBuf {
 
     @Override
     public ByteBuf setBytes(int index, byte[] src) {
-        return setBytes(index,src,0,src.length);
+        return setBytes(index, src, 0, src.length);
     }
 
     @Override
     public ByteBuf setBytes(int index, byte[] src, int srcIndex, int length) {
-        checkIndex(index,length);
-        System.arraycopy(src,srcIndex,array,index,length);
+        checkIndex(index, length);
+        System.arraycopy(src, srcIndex, array, index, length);
         return this;
     }
 
     @Override
     public ByteBuf getBytes(int index, byte[] dst) {
-        return getBytes(index,dst,0,dst.length);
+        return getBytes(index, dst, 0, dst.length);
     }
 
     /**
      * 将array中的字节数据 读取到另一个数组中 所以src数字是array 起始的位置为index
+     *
      * @param index    起始位置
      * @param dst      目标字节数组
      * @param dstIndex 目标数组起始位置
@@ -210,8 +212,8 @@ public class HeapByteBuf extends AbstractByteBuf {
      */
     @Override
     public ByteBuf getBytes(int index, byte[] dst, int dstIndex, int length) {
-        checkIndex(index,length);
-        System.arraycopy(array,index,dst,dstIndex,length);
+        checkIndex(index, length);
+        System.arraycopy(array, index, dst, dstIndex, length);
         return this;
     }
 
@@ -221,56 +223,18 @@ public class HeapByteBuf extends AbstractByteBuf {
 
     @Override
     public ByteBuffer nioBuffer() {
-        return nioBuffer(0,array.length);
+        return nioBuffer(0, array.length);
     }
 
     @Override
     public ByteBuffer nioBuffer(int index, int length) {
-        return ByteBuffer.wrap(array,index,length).slice();
+        return ByteBuffer.wrap(array, index, length).slice();
     }
 
 
     // =====================
-    // 引用计数
+    // 引用计数 大部分方法交给AbstractReferenceCountedByteBuf了
     // =====================
-
-    @Override
-    public int refCnt() {
-        return refCnt;
-    }
-
-    @Override
-    public ReferenceCounted retain() {
-        return retain(1);
-    }
-
-    @Override
-    public ReferenceCounted retain(int increment) {
-        if(increment < 0){
-            throw new IllegalArgumentException("increment: " + increment + " (expected: > 0)");
-        }
-        refCnt += increment;
-        return this;
-    }
-
-    @Override
-    public boolean release() {
-        return release(1);
-    }
-
-
-    @Override
-    public boolean release(int decrement) {
-        if(decrement < 0){
-            throw new IllegalArgumentException("decrement: " + decrement + " (expected: > 0)");
-        }
-        refCnt -= decrement;
-        if(refCnt < 0){
-            deallocate();
-            return true;
-        }
-        return false;
-    }
 
     /**
      * 释放资源
