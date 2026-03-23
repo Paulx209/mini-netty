@@ -219,7 +219,7 @@ public abstract class AbstractByteBuf extends ByteBuf {
     @Override
     public ByteBuf writeShort(int value) {
         ensureWritable(2);
-        setByte(writerIndex, value);
+        setShort(writerIndex, value);
         writerIndex += 2;
         return this;
     }
