@@ -270,7 +270,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         EventLoop eventLoop = group().next();
 
         //channel和eventLoop进行绑定
-        channel.unsafe().register(eventLoop);
+        ChannelPromise promise = new DefaultChannelPromise(channel);
+        channel.unsafe().register(eventLoop, promise);
 
         return channel;
     }
