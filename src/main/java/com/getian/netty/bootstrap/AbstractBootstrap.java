@@ -253,7 +253,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
      *
      * @return 创建的 Channel
      */
-    private C initAndRegister() {
+    protected C initAndRegister() {
         C channel = null;
         try {
             //1.根据反射创建Channel
