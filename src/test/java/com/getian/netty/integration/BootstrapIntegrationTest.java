@@ -128,12 +128,16 @@ public class BootstrapIntegrationTest {
     @Nested
     @DisplayName("Bootstrap 验证测试")
     class BootstrapValidationTests {
+        /**
+         * validate参数会对：group channel类型 childHandler进行校验
+         */
         @Test
         @DisplayName("未设置 group 时验证失败")
         void failsValidationWithoutGroup() {
             Bootstrap bootstrap = new Bootstrap()
                     .channel(NioSocketChannel.class)
                     .handler(new ChannelInboundHandlerAdapter());
+            //缺少group
             assertThatThrownBy(bootstrap::validate).isInstanceOf(IllegalStateException.class).hasMessageContaining("group");
         }
 
@@ -143,6 +147,7 @@ public class BootstrapIntegrationTest {
             Bootstrap bootstrap = new Bootstrap()
                     .group(clientGroup)
                     .handler(new ChannelInboundHandlerAdapter());
+            //缺少channel类型
             assertThatThrownBy(bootstrap::validate).isInstanceOf(IllegalStateException.class);
         }
 
@@ -152,6 +157,8 @@ public class BootstrapIntegrationTest {
             Bootstrap bootstrap = new Bootstrap()
                     .group(clientGroup)
                     .channel(NioSocketChannel.class);
+
+            //缺少handler 对于一个clientBootstrap来说 没有handler的话 就是垃圾
 
             assertThatThrownBy(bootstrap::validate)
                     .isInstanceOf(IllegalStateException.class)
@@ -210,6 +217,15 @@ public class BootstrapIntegrationTest {
     @Nested
     @DisplayName("连接测试")
     class ConnectTests {
+        /**
+         * 全流程逻辑梳理，梳理不成功不下播：
+         * 1.创建serverBootstrap的时候，可以给childHandler赋值了一个handler，这里先标记一下
+         *      1.1 这个handler只有在channelActive事件触发的时候才会被调用。
+         * 2.然后服务端启动，调用bind方法，这里的端口号是随机的，所以后面client进行连接的时候，需要获取到端口号。bind方法的流程
+         *      2.1 首先对参数进行校验（group channel类型）, 然后创建和初始化channel，init这部分逻辑再看一下
+         *      2.2
+         * @throws Exception
+         */
         @Test
         @DisplayName("连接到服务端")
         void connectsToServer() throws Exception {
@@ -288,7 +304,7 @@ public class BootstrapIntegrationTest {
             //服务端：收到消息后回复
             ServerBootstrap serverBootstrap = new ServerBootstrap()
                     .group(bossGroup, workerGroup)
-                    .channel(NioSocketChannel.class)
+                    .channel(NioServerSocketChannel.class)
                     .childHandler(new ChannelInboundHandlerAdapter() {
                         @Override
                         public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -391,9 +407,6 @@ public class BootstrapIntegrationTest {
             // 清理
             clientFuture.channel().close();
             serverFuture.channel().close();
-
-
-
         }
     }
 
