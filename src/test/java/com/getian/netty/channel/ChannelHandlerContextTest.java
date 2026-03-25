@@ -175,6 +175,14 @@ public class ChannelHandlerContextTest {
         }
 
         @Override
+        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+            events.add(name + ":userEventTriggered"  +evt);
+            if (!stopPropagation) {
+                ctx.fireUserEventTriggered(evt);
+            }
+        }
+
+        @Override
         public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
             events.add(name + ":handlerAdded");
         }

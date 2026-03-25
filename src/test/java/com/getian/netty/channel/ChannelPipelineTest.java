@@ -169,6 +169,12 @@ public class ChannelPipelineTest {
         public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
             events.add(name + ":handlerRemoved");
         }
+
+        @Override
+        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+            events.add(name + ":userEventTriggered:" + evt);
+            ctx.fireUserEventTriggered(evt);
+        }
     }
 
     private MockChannel channel;

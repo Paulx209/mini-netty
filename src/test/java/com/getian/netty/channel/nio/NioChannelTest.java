@@ -362,5 +362,10 @@ public class NioChannelTest {
         public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
 
         }
+
+        @Override
+        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+
+        }
     }
 }
