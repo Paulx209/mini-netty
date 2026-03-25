@@ -427,5 +427,12 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             // 未处理的异常到达这里
             System.err.println("[TailContext] 未处理的异常: " + cause.getMessage());
         }
+
+        @Override
+        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+            //
+        }
+
+
     }
 }

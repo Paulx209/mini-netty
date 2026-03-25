@@ -123,4 +123,8 @@ public class ChannelInboundHandlerAdapter implements ChannelInboundHandler {
         ctx.fireExceptionCaught(cause);
     }
 
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+        ctx.fireUserEventTriggered(evt);
+    }
 }
