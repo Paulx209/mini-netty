@@ -20,11 +20,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 
 public class MultiThreadBioServer {
+    //SimpleBioServer原有的属性
     private final int port;
-    private final int threadPoolSize;
     private ServerSocket serverSocket;
-    private ExecutorService executorService;
     private volatile boolean running;
+    //MultiThreadBioServer新增的属性
+    private final int threadPoolSize; //线程池大小
+    private ExecutorService executorService; //线程池管理器
     private final AtomicInteger activeConnections = new AtomicInteger(0);
 
     /**
@@ -55,6 +57,7 @@ public class MultiThreadBioServer {
             try {
                 //阻塞线程
                 Socket clientSocket = serverSocket.accept();
+                activeConnections.incrementAndGet();
                 System.out.println("[MultiThreadBioServer] 客户端连接: " +
                         clientSocket.getRemoteSocketAddress());
                 //将客户端处理任务提交到线程池
