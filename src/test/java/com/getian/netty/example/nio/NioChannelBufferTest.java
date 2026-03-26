@@ -37,7 +37,8 @@ public class NioChannelBufferTest {
         buffer1.flip();
         printBufferState("读模式", buffer1);
 
-        assertThat(buffer1.remaining()).isEqualTo(4);
+        //转换为读模式之后 remaining表达的意思是：还有多少个可读的字节
+        assertThat(buffer1.remaining()).isEqualTo(6);
         assertThat(buffer2.capacity()).isEqualTo(20);
     }
 
