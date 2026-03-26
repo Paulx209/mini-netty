@@ -123,6 +123,16 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     }
 
     /**
+     * 链尾添加Handler 名称默认
+     * @param handler  Handler 实例
+     * @return
+     */
+    @Override
+    public ChannelPipeline addLast(ChannelHandler handler) {
+        return addLast(generateName(handler), handler);
+    }
+
+    /**
      * 移除Handler -> 移除对应的context
      *
      * @param handler 要移除的 Handler
@@ -259,6 +269,12 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return this;
     }
 
+    @Override
+    public ChannelPipeline fireUserEventTriggered(Object event) {
+        head.invokeUserEventTriggered(event);
+        return this;
+    }
+
     // ========== 辅助方法 ==========
 
     private AbstractChannelHandlerContext newContext(String name, ChannelHandler handler) {
@@ -312,6 +328,29 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             System.err.println("[DefaultChannelPipeline] handlerRemoved 失败: " + e.getMessage());
         }
     }
+
+    /**
+     * 生成名称
+     * 1.获取baseName 要么是class名称 要么是全限定类名
+     * 2.然后判断当前名称是否在handler Map中存在？
+     * 3.存在的话就在后面添加编号 xxx#1
+     * @param handler
+     * @return
+     */
+    private String generateName(ChannelHandler handler) {
+        String className = handler.getClass().getSimpleName();
+        if (className.isEmpty()) {
+            className = handler.getClass().getName();
+        }
+        int suffix = 0;
+        String name = className;
+        while (name2ctx.containsKey(name)) {
+            suffix++;
+            name = className + "#" + suffix;
+        }
+        return name;
+    }
+
 
     /**
      * 头节点 Context - 处理出站操作的最终执行
@@ -432,7 +471,5 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
             //
         }
-
-
     }
 }

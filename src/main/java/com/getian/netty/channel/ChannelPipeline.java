@@ -16,6 +16,13 @@ public interface ChannelPipeline {
     ChannelPipeline addLast(String name, ChannelHandler handler);
 
     /**
+     * 在链尾添加Handler(使用默认生成的name)
+     * @param handler  Handler 实例
+     * @return this
+     */
+    ChannelPipeline addLast(ChannelHandler handler);
+
+    /**
      * 在链头添加 Handler
      *
      * @param name    Handler 名称
@@ -132,6 +139,16 @@ public interface ChannelPipeline {
      * @return this，便于链式调用
      */
     ChannelPipeline fireExceptionCaught(Throwable cause);
+
+
+    /**
+     * 触发用户自定义事件
+     *
+     * @param event 用户事件
+     * @return this，便于链式调用
+     */
+    ChannelPipeline fireUserEventTriggered(Object event);
+
 
 
     // ========== 出站操作 ==========
