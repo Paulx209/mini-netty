@@ -185,12 +185,12 @@ public class FixedLengthFrameDecoderTest {
 
             //触发
             ByteBuf buf = allocator.heapBuffer(16, 64);
-            buf.writeBytes("sign".getBytes(StandardCharsets.UTF_8));
+            buf.writeBytes("1234".getBytes(StandardCharsets.UTF_8));
             pipeline.fireChannelRead(buf);
 
             //最后验证
             assertThat(recorder.frames.size()).isEqualTo(1);
-            assertThat(recorder.frameStrings.get(0)).isEqualTo("sign");
+            assertThat(recorder.frameStrings.get(0)).isEqualTo("1234");
         }
 
         /**
