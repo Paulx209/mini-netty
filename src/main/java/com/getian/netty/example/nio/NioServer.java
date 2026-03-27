@@ -45,17 +45,15 @@ public class NioServer {
         running = true;
         System.out.println("[NioServer] 服务端启动，监听端口: " + port);
 
+
         //2.事件循环
         while (running) {
             //2.1 检查是否有就绪的channel
             int select = selector.select(1000);
-
             if (!running || !selector.isOpen()) {
                 break;
             }
-
             if (select == 0) continue;
-
             //2.2 如果有的话
             Set<SelectionKey> selectionKeys = selector.selectedKeys();
             Iterator<SelectionKey> iterator = selectionKeys.iterator();
@@ -63,11 +61,9 @@ public class NioServer {
                 SelectionKey key = iterator.next();
                 // 先移除再处理，避免并发修改异常
                 iterator.remove();
-
                 if (!key.isValid()) {
                     continue;
                 }
-
                 try {
                     if (key.isAcceptable()) {
                         handleAccept(key);
@@ -132,6 +128,7 @@ public class NioServer {
             key.attach(ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
 
             //将key的事件类型由read 修改为 write
+            //意味着：我这里有数据准备好了,如果缓冲区有空余空间的话，就可以唤醒我。几乎是瞬时触发write事件，如果在写完之后没有将写事件取消的话，就会一直空轮询。
             key.interestOps(SelectionKey.OP_WRITE);
         }
     }
@@ -152,6 +149,7 @@ public class NioServer {
             if (!buffer.hasRemaining()) {
                 //写入完成 切换为Read事件
                 key.attach(null);
+                //必须切换，否则空轮询
                 key.interestOps(SelectionKey.OP_READ);
             }
         }

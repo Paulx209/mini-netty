@@ -55,6 +55,7 @@ public class NioClient implements AutoCloseable {
 
         //读取响应的信息
         ByteBuffer readBuffer = ByteBuffer.allocate(1024);
+        //通道将数据读到buffer中 所以readBuffer是写模式
         int bytesRead = clientChannel.read(readBuffer);
         if (bytesRead > 0) {
             readBuffer.flip();
