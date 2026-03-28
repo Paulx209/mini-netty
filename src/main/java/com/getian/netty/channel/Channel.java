@@ -61,7 +61,7 @@ public interface Channel {
 
 
     /**
-     * 判断 Channel 是否打开
+     * Channel开启后只要不关闭 都是Open状态
      *
      * @return 如果 Channel 打开返回 true
      */
@@ -78,7 +78,8 @@ public interface Channel {
 
     /**
      * 判断 Channel 是否处于活动状态
-     *
+     * NioServerSocketChannel -> bind ; NioSocketChannel -> connect
+     * open -> register -> bind / connect
      * <p>对于 TCP 连接，活动状态意味着连接已建立。
      *
      * @return 如果处于活动状态返回 true

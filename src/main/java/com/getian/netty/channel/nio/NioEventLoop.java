@@ -146,6 +146,12 @@ public class NioEventLoop extends SingleThreadEventLoop {
      * @param key 就绪的 SelectionKey
      */
     protected void processSelectedKeys(SelectionKey key) {
+        Object attachment = key.attachment();
+        if (!(attachment instanceof AbstractNioChannel)) {
+            return;
+        }
+
+        AbstractNioChannel channel = (AbstractNioChannel) attachment;
         if (key.isAcceptable()) {
             System.out.println("[NioEventLoop] ACCEPT 事件");
         }
@@ -158,5 +164,6 @@ public class NioEventLoop extends SingleThreadEventLoop {
         if (key.isWritable()) {
             System.out.println("[NioEventLoop] WRITE 事件");
         }
+        channel.handleSelectedKey(key);
     }
 }

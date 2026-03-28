@@ -125,8 +125,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
     }
 
     /**
-     * 开始读取数据
-     *
+     * 让selector帮channel监控read事件，如果有消息发过来的话，就调用对应的handleRead()方法
      * <p>设置读操作的 interest op，让 Selector 通知数据可读。
      */
     protected void doBeginRead() throws Exception {
@@ -134,10 +133,21 @@ public abstract class AbstractNioChannel extends AbstractChannel {
         if (!selectionKey.isValid()) {
             return;
         }
-
         int interestOps = selectionKey.interestOps();
+        //如果相与的结果为0的话，就说明interestOps中不包括读事件，所以就额外把读取事件加进去
         if ((interestOps & readInterestOp) == 0) {
+            //将当前已经关注的事件 和 读取事件 都加进去
             selectionKey.interestOps(interestOps | readInterestOp);
+        }
+    }
+
+    void handleSelectedKey(SelectionKey key) {
+        if (key.isConnectable() && this instanceof NioSocketChannel) {
+            ((NioSocketChannel) this).finishConnect();
+        }
+
+        if (key.isAcceptable() || key.isReadable()) {
+            doRead();
         }
     }
 

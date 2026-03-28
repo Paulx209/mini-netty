@@ -96,6 +96,16 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     }
 
     /**
+     * 链尾添加Handler 名称默认
+     * @param handler  Handler 实例
+     * @return
+     */
+    @Override
+    public ChannelPipeline addLast(ChannelHandler handler) {
+        return addLast(generateName(handler), handler);
+    }
+
+    /**
      * 尾部添加ctx
      *
      * @param name
@@ -120,16 +130,6 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         }
         callHandlerAdded(newCtx);
         return this;
-    }
-
-    /**
-     * 链尾添加Handler 名称默认
-     * @param handler  Handler 实例
-     * @return
-     */
-    @Override
-    public ChannelPipeline addLast(ChannelHandler handler) {
-        return addLast(generateName(handler), handler);
     }
 
     /**
