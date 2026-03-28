@@ -62,7 +62,7 @@ public class ScheduledTaskTest {
             CountDownLatch latch = new CountDownLatch(1);
             AtomicBoolean executed = new AtomicBoolean(false);
             long start = System.currentTimeMillis();
-            //500ms后执行
+            //200ms后执行
             eventLoop.schedule(() -> {
                 executed.set(true);
                 latch.countDown();
@@ -83,6 +83,9 @@ public class ScheduledTaskTest {
                 latch.countDown();
                 System.out.println("哈哈");
             }, 200, TimeUnit.MILLISECONDS);
+
+            //schedule加入一个定时任务，返回对应的ScheduledFuture，对外暴露一个标准的future，可以查询状态，随时取消
+            //future.cancel(true);
 
             assertThat((Object) future).isNotNull();
             assertThat((Object) future).isInstanceOf(ScheduledFuture.class);
@@ -260,6 +263,14 @@ public class ScheduledTaskTest {
                 }, 1, TimeUnit.SECONDS);
                 System.out.println(future.isDone());
                 future.cancel(false);
+                //haha不会被输出
+                try {
+                    Thread.sleep(2000);
+                    assertThat(future.isCancelled()).isTrue();
+                    assertThat(future.isDone()).isTrue();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
 
             @Test

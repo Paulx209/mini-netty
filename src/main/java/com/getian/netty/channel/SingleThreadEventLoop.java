@@ -69,7 +69,7 @@ public abstract class SingleThreadEventLoop implements EventLoop {
     }
 
     /**
-     * 获取下一个员工
+     * 获取下一个员工  后续搭配EventLoop之后 可以通过负载均衡策略获取eventLoop
      * <p>
      * 但是由于EventLoop继承了Group接口，也就是组建了只有一个员工的团队
      * 所以每次派人出来干活的时候，只能派自己
@@ -307,7 +307,7 @@ public abstract class SingleThreadEventLoop implements EventLoop {
                 break;
             }
             ScheduledTask task = scheduledTaskQueue.poll();
-            if (!task.isCancelled()) {
+            if (task !=null &&  !task.isCancelled() && !task.isDone()) {
                 try {
                     task.run();
                     count++;

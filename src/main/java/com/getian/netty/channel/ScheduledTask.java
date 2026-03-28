@@ -163,6 +163,10 @@ public class ScheduledTask implements ScheduledFuture<Void>, Runnable {
         return cancelled.get();
     }
 
+    /**
+     * 该Future是否结束了。如果执行结束 或者 被取消掉 都算isDone
+     * @return
+     */
     @Override
     public boolean isDone() {
         return done.get() || cancelled.get();
