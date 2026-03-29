@@ -186,6 +186,18 @@ public class ChannelPipelineTest {
         pipeline = new DefaultChannelPipeline(channel);
     }
 
+    @DisplayName("channel绑定的pipeline 和 新建的pipeline是同一个对象吗？")
+    @Test
+    public void test(){
+        Channel channel1 = pipeline.channel();
+        //同一个对象;
+        assertThat(channel1).isEqualTo(channel);
+
+        ChannelPipeline pipeline1 = channel.pipeline();
+        //并非同一个对象;
+        assertThat(pipeline1).isEqualTo(pipeline);
+    }
+
     @Nested
     @DisplayName("Pipeline 结构测试")
     class PipelineStructureTests {
