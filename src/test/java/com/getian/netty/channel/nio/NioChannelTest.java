@@ -9,7 +9,11 @@ import com.getian.netty.channel.ChannelInboundHandler;
 import org.junit.jupiter.api.*;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -135,6 +139,96 @@ public class NioChannelTest {
                 serverSocketChannel.close();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
+            }
+        }
+
+        @Test
+        @DisplayName("注册并绑定后开始关注 ACCEPT 事件")
+        void beginsReadAfterRegisterAndBind() throws Exception {
+            NioServerSocketChannel serverSocketChannel = new NioServerSocketChannel();
+
+            serverSocketChannel.register(serverEventLoop);
+            Thread.sleep(100);
+            serverSocketChannel.bind(0);
+            Thread.sleep(100);
+
+            assertThat(serverSocketChannel.selectionKey().interestOps() & SelectionKey.OP_ACCEPT).isNotZero();
+
+            serverSocketChannel.close();
+        }
+
+        @Test
+        @DisplayName("ACCEPT 事件会分发到 ServerChannel 的 pipeline")
+        void acceptEventDispatchesToPipeline() throws Exception {
+            NioServerSocketChannel serverSocketChannel = new NioServerSocketChannel();
+            CountDownLatch latch = new CountDownLatch(1);
+
+            serverSocketChannel.pipeline().addLast("acceptObserver", new ChannelInboundHandler() {
+                @Override
+                public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+                }
+
+                @Override
+                public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+                }
+
+                @Override
+                public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+                    ctx.fireChannelRegistered();
+                }
+
+                @Override
+                public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+                    ctx.fireChannelUnregistered();
+                }
+
+                @Override
+                public void channelActive(ChannelHandlerContext ctx) throws Exception {
+                    ctx.fireChannelActive();
+                }
+
+                @Override
+                public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+                    ctx.fireChannelInactive();
+                }
+
+                @Override
+                public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+                    if (msg instanceof NioSocketChannel) {
+                        latch.countDown();
+                    }
+                    ctx.fireChannelRead(msg);
+                }
+
+                @Override
+                public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+                    ctx.fireChannelReadComplete();
+                }
+
+                @Override
+                public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+                    ctx.fireUserEventTriggered(evt);
+                }
+
+                @Override
+                public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+                    ctx.fireExceptionCaught(cause);
+                }
+            });
+
+            serverSocketChannel.register(serverEventLoop);
+            Thread.sleep(100);
+            serverSocketChannel.bind(0);
+            Thread.sleep(100);
+
+            InetSocketAddress localAddress = (InetSocketAddress) serverSocketChannel.localAddress();
+            SocketChannel client = SocketChannel.open();
+            try {
+                client.connect(localAddress);
+                assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
+            } finally {
+                client.close();
+                serverSocketChannel.close();
             }
         }
     }
