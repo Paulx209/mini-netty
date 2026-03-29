@@ -91,6 +91,13 @@ public abstract class ByteBuf implements ReferenceCounted {
     public abstract ByteBuf setIndex(int readerIndex, int writerIndex);
 
     /**
+     * 清除索引（readerIndex = writerIndex = 0）
+     *
+     * @return this
+     */
+    public abstract ByteBuf clear();
+
+    /**
      * 获取可读字节数
      *
      * @return writerIndex - readerIndex
@@ -135,12 +142,6 @@ public abstract class ByteBuf implements ReferenceCounted {
      */
     public abstract boolean isWritable(int size);
 
-    /**
-     * 清除索引（readerIndex = writerIndex = 0）
-     *
-     * @return this
-     */
-    public abstract ByteBuf clear();
 
 
     // =====================
@@ -214,6 +215,28 @@ public abstract class ByteBuf implements ReferenceCounted {
      */
     public abstract long getLong(int index);
 
+    /**
+     * 获取指定位置的字节到目标数组
+     *
+     * @param index 起始位置
+     * @param dst   目标字节数组
+     * @return this
+     */
+    public abstract ByteBuf getBytes(int index, byte[] dst);
+
+
+    /**
+     * 获取指定位置的字节到目标数组（指定范围）
+     *
+     * @param index    起始位置
+     * @param dst      目标字节数组
+     * @param dstIndex 目标数组起始位置
+     * @param length   长度
+     * @return this
+     */
+    public abstract ByteBuf getBytes(int index, byte[] dst, int dstIndex, int length);
+
+
 
     /**
      * 设置指定位置的字节
@@ -273,27 +296,6 @@ public abstract class ByteBuf implements ReferenceCounted {
      * @return this
      */
     public abstract ByteBuf setBytes(int index, byte[] src, int srcIndex, int length);
-
-    /**
-     * 获取指定位置的字节到目标数组
-     *
-     * @param index 起始位置
-     * @param dst   目标字节数组
-     * @return this
-     */
-    public abstract ByteBuf getBytes(int index, byte[] dst);
-
-
-    /**
-     * 获取指定位置的字节到目标数组（指定范围）
-     *
-     * @param index    起始位置
-     * @param dst      目标字节数组
-     * @param dstIndex 目标数组起始位置
-     * @param length   长度
-     * @return this
-     */
-    public abstract ByteBuf getBytes(int index, byte[] dst, int dstIndex, int length);
 
     // =====================
     // 顺序读取（改变 readerIndex）

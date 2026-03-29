@@ -126,25 +126,21 @@ public abstract class AbstractByteBuf extends ByteBuf {
         return this;
     }
 
-    /**
-     * reset的时候 是使用标记的index去set的
-     *
-     * @return this
-     */
     @Override
     public ByteBuf resetReaderIndex() {
         readerIndex(markedReaderIndex);
         return this;
     }
 
-    public ByteBuf resetWriterIndex(){
-        writerIndex(markedWriterIndex);
+    @Override
+    public ByteBuf markWriterIndex() {
+        markedWriterIndex = writerIndex;
         return this;
     }
 
     @Override
-    public ByteBuf markWriterIndex() {
-        markedWriterIndex = writerIndex;
+    public ByteBuf resetWriterIndex(){
+        writerIndex(markedWriterIndex);
         return this;
     }
 
@@ -344,7 +340,7 @@ public abstract class AbstractByteBuf extends ByteBuf {
             return this;
         }
         if (readerIndex != writerIndex) {
-            //将未读数据移动到开头
+            //将未读数据移动到开头,旧array中的[readerIndex,writerIndex]这部分数据 移动到 array中的[0,writeIndex-readerIndex]
             setBytes(0, array(), arrayOffset() + readerIndex, writerIndex - readerIndex);
             writerIndex -= readerIndex;
             adjustMarkers(readerIndex);

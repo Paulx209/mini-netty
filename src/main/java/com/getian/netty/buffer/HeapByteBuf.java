@@ -79,6 +79,7 @@ public class HeapByteBuf extends AbstractReferenceCountedByteBuf {
             readerIndex = newCapacity;
             writerIndex = newCapacity;
         } else if (writerIndex > newCapacity) {
+            //读指针不需要改变 写指针需要减小
             writerIndex = newCapacity;
         }
         return this;
