@@ -8,9 +8,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  */
 
 public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
-
     //给 AbstractReferenceCountedByteBuf 这个类的 refCnt 字段，生成一个支持原子增减的更新器
-    AtomicIntegerFieldUpdater<AbstractReferenceCountedByteBuf> REF_CNT_UPDATER =
+    public static final AtomicIntegerFieldUpdater<AbstractReferenceCountedByteBuf> REF_CNT_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(AbstractReferenceCountedByteBuf.class, "refCnt");
 
     //volatile可以实现可见性，有序性。但是这里复合执行动作的原子性没有办法保证 。updater可以对refCnt属性进行原子修改
@@ -90,6 +89,7 @@ public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
             }
         }
 
+        //引用计数变成0之后，就可以标记array = null 然后就会触发gc垃圾回收
         if (oldRefCnt == decrement) {
             deallocate();
             return true;
