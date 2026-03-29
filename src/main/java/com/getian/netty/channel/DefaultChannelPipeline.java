@@ -398,7 +398,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
         @Override
         public void read(ChannelHandlerContext ctx) {
-            // 请求读取操作
+            ctx.channel().unsafe().beginRead();
         }
 
         @Override

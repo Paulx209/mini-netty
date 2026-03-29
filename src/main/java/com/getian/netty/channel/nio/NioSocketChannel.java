@@ -80,6 +80,7 @@ public class NioSocketChannel extends AbstractNioChannel {
     @Override
     public boolean isActive() {
         SocketChannel clientChannel = javaChannel();
+        //channel开启 并且 channel底层对应的ServerSocket必须是connect了地址的
         return isOpen() && clientChannel.isConnected();
     }
 
@@ -106,16 +107,19 @@ public class NioSocketChannel extends AbstractNioChannel {
             boolean connected = clientChannel.connect(remoteAddress);
             if (connected) {
                 System.out.println("[NioSocketChannel] 已连接到 " + remoteAddress);
-                // 连接成功，触发 channelActive
+                // 连接立即建立时，已注册的 Channel 直接进入 active/read 状态。
                 if (isRegistered()) {
-                    pipeline().fireChannelRegistered();
+                    pipeline().fireChannelActive();
+                    if (config().isAutoRead()) {
+                        unsafe().beginRead();
+                    }
                 }
             } else {
                 // 连接进行中，需要等待 OP_CONNECT 事件
                 System.out.println("[NioSocketChannel] 正在连接 " + remoteAddress);
-                // 设置关注 OP_CONNECT 事件
                 SelectionKey key = selectionKey();
                 if (key != null) {
+                    //设置关注 OP_CONNECT 事件
                     key.interestOps(key.interestOps() | SelectionKey.OP_CONNECT);
                 }
             }
@@ -154,6 +158,9 @@ public class NioSocketChannel extends AbstractNioChannel {
                 }
                 // 触发 channelActive
                 pipeline().fireChannelActive();
+                if (config().isAutoRead()) {
+                    unsafe().beginRead();
+                }
             }
             return finished;
         } catch (IOException e) {

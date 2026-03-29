@@ -59,6 +59,7 @@ public class NioServerSocketChannel extends AbstractNioChannel {
 
     @Override
     public boolean isActive() {
+        //channel开启 并且 channel底层对应的ServerSocket必须是bind了端口号
         return isOpen() && javaChannel().socket().isBound();
     }
 
@@ -87,6 +88,9 @@ public class NioServerSocketChannel extends AbstractNioChannel {
             // 触发 channelActive 事件
             if (isRegistered()) {
                 pipeline().fireChannelActive();
+                if (config().isAutoRead()) {
+                    unsafe().beginRead();
+                }
             }
 
             return newSucceededFuture();

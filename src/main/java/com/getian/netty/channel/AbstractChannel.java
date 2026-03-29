@@ -377,6 +377,9 @@ public abstract class AbstractChannel implements Channel {
                 //4.如果 Channel 已经是活动状态，触发 channelActive 事件
                 if (isActive()) {
                     pipeline.fireChannelActive();
+                    if (config().isAutoRead()) {
+                        beginRead();
+                    }
                 }
             } catch (Exception e) {
                 promise.setFailure(e);
@@ -409,6 +412,9 @@ public abstract class AbstractChannel implements Channel {
 
                 if (isActive()) {
                     pipeline.fireChannelActive();
+                    if (config().isAutoRead()) {
+                        beginRead();
+                    }
                 }
             } catch (Exception e) {
                 promise.setFailure(e);
@@ -442,6 +448,9 @@ public abstract class AbstractChannel implements Channel {
                 // 连接成功后触发 channelActive
                 if (isActive()) {
                     pipeline.fireChannelActive();
+                    if (config().isAutoRead()) {
+                        beginRead();
+                    }
                 }
             } catch (Exception e) {
                 promise.setFailure(e);
