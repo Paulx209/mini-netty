@@ -1,131 +1,96 @@
 package com.getian.netty.buffer;
 
-
 import java.nio.ByteBuffer;
 
 /**
- * 堆内存 ByteBuf 实现
- * 使用 Java 堆内存（byte[]）存储数据。 适合需要频繁访问数据的场景，GC 可以自动管理内存。
- * <p>
- * 特点：
- * 1.分配速度快
- * 2.数据存储在JVM堆中
- * 3.可直接访问底层数组
- * 4.网络IO时需要额外拷贝到直接内存
- *
- * @Author: sonicge
- * @CreateTime: 2026-03-21
+ * Heap-backed {@link ByteBuf} implementation.
  */
-
 public class HeapByteBuf extends AbstractReferenceCountedByteBuf {
-    private byte[] array;
+    protected byte[] array;
 
-    /**
-     * @param initialCapacity 初始化容量
-     * @param maxCapacity     最大容量
-     */
     public HeapByteBuf(int initialCapacity, int maxCapacity) {
         super(maxCapacity);
-        if (initialCapacity < 0) {
-            throw new IllegalArgumentException("initialCapacity: " + initialCapacity + " (expected: >= 0)");
-        }
-        if (initialCapacity > maxCapacity) {
-            throw new IllegalArgumentException(String.format(
-                    "initialCapacity: %d (expected: <= maxCapacity(%d))",
-                    initialCapacity, maxCapacity));
-        }
-        this.array = new byte[initialCapacity];
+        validateCapacity(initialCapacity, maxCapacity);
+        initializeArray(new byte[initialCapacity], maxCapacity, 0);
     }
 
     public HeapByteBuf(byte[] initialArray, int maxCapacity) {
         super(maxCapacity);
-        if (initialArray.length > maxCapacity) {
-            throw new IllegalArgumentException(String.format(
-                    "initialCapacity: %d (expected: <= maxCapacity(%d))",
-                    initialArray.length, maxCapacity));
+        if (initialArray == null) {
+            throw new NullPointerException("initialArray");
         }
-        this.array = initialArray;
-        this.writerIndex = initialArray.length;
+        validateCapacity(initialArray.length, maxCapacity);
+        initializeArray(initialArray, maxCapacity, initialArray.length);
     }
-
 
     @Override
     public int capacity() {
+        ensureAccessible();
         return array.length;
     }
 
     @Override
     public ByteBuf capacity(int newCapacity) {
-        //1.如果newCapacity 大于 最大容量的话
+        ensureAccessible();
         if (newCapacity < 0 || newCapacity > maxCapacity()) {
             throw new IllegalArgumentException(String.format(
                     "newCapacity: %d (expected: 0 <= newCapacity <= maxCapacity(%d))",
                     newCapacity, maxCapacity()));
         }
-        //2.如果newCapacity == oldCapacity的话 就不需要扩容了
+
         int oldCapacity = array.length;
         if (oldCapacity == newCapacity) {
             return this;
         }
 
-        //3.修改底层的byte数组
         byte[] newArray = new byte[newCapacity];
-        //newCapacity可能比olcCapacity小 -> 缩容 所以这里要取一个最小值
         System.arraycopy(array, 0, newArray, 0, Math.min(oldCapacity, newCapacity));
-        this.array = newArray;
+        replaceArray(newArray);
 
-        //4.重新更新读写的指针  因为这个newCapacity有可能是变小的 所以可能是缩容
         if (readerIndex > newCapacity) {
             readerIndex = newCapacity;
             writerIndex = newCapacity;
         } else if (writerIndex > newCapacity) {
-            //读指针不需要改变 写指针需要减小
             writerIndex = newCapacity;
         }
         return this;
     }
 
-
     @Override
     public boolean hasArray() {
+        ensureAccessible();
         return true;
     }
 
     @Override
     public byte[] array() {
+        ensureAccessible();
         return array;
     }
 
     @Override
     public int arrayOffset() {
+        ensureAccessible();
         return 0;
     }
 
-
-    // =====================
-    // 随机访问实现
-    // =====================
-
     @Override
     public byte getByte(int index) {
+        ensureAccessible();
         checkIndex(index, 1);
         return array[index];
     }
 
-    /**
-     * 取array[index]  和 array[index+1] 分别放到short的高八位和低八位
-     *
-     * @param index 位置
-     * @return
-     */
     @Override
     public short getShort(int index) {
+        ensureAccessible();
         checkIndex(index, 2);
         return (short) ((array[index] & 0xff) << 8 | (array[index + 1] & 0xff));
     }
 
     @Override
     public int getInt(int index) {
+        ensureAccessible();
         checkIndex(index, 4);
         return (array[index] & 0xff) << 24 |
                 (array[index + 1] & 0xff) << 16 |
@@ -135,6 +100,7 @@ public class HeapByteBuf extends AbstractReferenceCountedByteBuf {
 
     @Override
     public long getLong(int index) {
+        ensureAccessible();
         checkIndex(index, 8);
         return ((long) array[index] & 0xff) << 56 |
                 ((long) array[index + 1] & 0xff) << 48 |
@@ -148,6 +114,7 @@ public class HeapByteBuf extends AbstractReferenceCountedByteBuf {
 
     @Override
     public ByteBuf setByte(int index, int value) {
+        ensureAccessible();
         checkIndex(index, 1);
         array[index] = (byte) value;
         return this;
@@ -155,6 +122,7 @@ public class HeapByteBuf extends AbstractReferenceCountedByteBuf {
 
     @Override
     public ByteBuf setShort(int index, int value) {
+        ensureAccessible();
         checkIndex(index, 2);
         array[index] = (byte) (value >>> 8);
         array[index + 1] = (byte) value;
@@ -163,6 +131,7 @@ public class HeapByteBuf extends AbstractReferenceCountedByteBuf {
 
     @Override
     public ByteBuf setInt(int index, int value) {
+        ensureAccessible();
         checkIndex(index, 4);
         array[index] = (byte) (value >>> 24);
         array[index + 1] = (byte) (value >>> 16);
@@ -173,6 +142,7 @@ public class HeapByteBuf extends AbstractReferenceCountedByteBuf {
 
     @Override
     public ByteBuf setLong(int index, long value) {
+        ensureAccessible();
         checkIndex(index, 8);
         array[index] = (byte) (value >>> 56);
         array[index + 1] = (byte) (value >>> 48);
@@ -187,11 +157,13 @@ public class HeapByteBuf extends AbstractReferenceCountedByteBuf {
 
     @Override
     public ByteBuf setBytes(int index, byte[] src) {
+        ensureAccessible();
         return setBytes(index, src, 0, src.length);
     }
 
     @Override
     public ByteBuf setBytes(int index, byte[] src, int srcIndex, int length) {
+        ensureAccessible();
         checkIndex(index, length);
         System.arraycopy(src, srcIndex, array, index, length);
         return this;
@@ -199,50 +171,68 @@ public class HeapByteBuf extends AbstractReferenceCountedByteBuf {
 
     @Override
     public ByteBuf getBytes(int index, byte[] dst) {
+        ensureAccessible();
         return getBytes(index, dst, 0, dst.length);
     }
 
-    /**
-     * 将array中的字节数据 读取到另一个数组中 所以src数字是array 起始的位置为index
-     *
-     * @param index    起始位置
-     * @param dst      目标字节数组
-     * @param dstIndex 目标数组起始位置
-     * @param length   长度
-     * @return
-     */
     @Override
     public ByteBuf getBytes(int index, byte[] dst, int dstIndex, int length) {
+        ensureAccessible();
         checkIndex(index, length);
         System.arraycopy(array, index, dst, dstIndex, length);
         return this;
     }
 
-    // =====================
-    // NIO 转换
-    // =====================
-
     @Override
     public ByteBuffer nioBuffer() {
+        ensureAccessible();
         return nioBuffer(0, array.length);
     }
 
     @Override
     public ByteBuffer nioBuffer(int index, int length) {
+        ensureAccessible();
+        checkIndex(index, length);
         return ByteBuffer.wrap(array, index, length).slice();
     }
 
-
-    // =====================
-    // 引用计数 大部分方法交给AbstractReferenceCountedByteBuf了
-    // =====================
-
-    /**
-     * 释放资源
-     */
+    @Override
     protected void deallocate() {
-        // 堆内存由 GC 管理，这里只是标记
         array = null;
     }
 
+    protected final void initializeArray(byte[] initialArray, int maxCapacity, int writerIndex) {
+        if (initialArray == null) {
+            throw new NullPointerException("initialArray");
+        }
+        validateCapacity(initialArray.length, maxCapacity);
+        // 这一步既用于首次创建，也用于池化对象重新激活时的“状态重置”。
+        setMaxCapacity(maxCapacity);
+        this.array = initialArray;
+        resetIndexes();
+        resetMarkers();
+        this.writerIndex = writerIndex;
+    }
+
+    protected final void reuse(byte[] initialArray, int maxCapacity) {
+        // 复用旧数组时不保留历史读写痕迹，重新作为一个空缓冲区借出。
+        initializeArray(initialArray, maxCapacity, 0);
+    }
+
+    protected final byte[] replaceArray(byte[] newArray) {
+        byte[] oldArray = array;
+        array = newArray;
+        return oldArray;
+    }
+
+    private static void validateCapacity(int initialCapacity, int maxCapacity) {
+        if (initialCapacity < 0) {
+            throw new IllegalArgumentException("initialCapacity: " + initialCapacity + " (expected: >= 0)");
+        }
+        if (initialCapacity > maxCapacity) {
+            throw new IllegalArgumentException(String.format(
+                    "initialCapacity: %d (expected: <= maxCapacity(%d))",
+                    initialCapacity, maxCapacity));
+        }
+    }
 }

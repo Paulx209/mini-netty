@@ -3,16 +3,14 @@ package com.getian.netty.buffer;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
- * @Author: sonicge
- * @CreateTime: 2026-03-22
+ * 带原子引用计数的 ByteBuf 基类。
  */
-
 public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
-    //给 AbstractReferenceCountedByteBuf 这个类的 refCnt 字段，生成一个支持原子增减的更新器
+    // 通过 AtomicIntegerFieldUpdater 在无锁场景下修改 refCnt。
     public static final AtomicIntegerFieldUpdater<AbstractReferenceCountedByteBuf> REF_CNT_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(AbstractReferenceCountedByteBuf.class, "refCnt");
 
-    //volatile可以实现可见性，有序性。但是这里复合执行动作的原子性没有办法保证 。updater可以对refCnt属性进行原子修改
+    // 新创建或重新激活的 ByteBuf 默认只有一个持有者，所以初始值是 1。
     private volatile int refCnt = 1;
 
     protected AbstractReferenceCountedByteBuf(int maxCapacity) {
@@ -24,26 +22,19 @@ public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
         return refCnt;
     }
 
-    /**
-     * 内部使用
-     *
-     * @param refCnt
-     */
     protected void setRefCnt(int refCnt) {
-        //updater可以对refCnt属性进行原子修改
         REF_CNT_UPDATER.set(this, refCnt);
     }
 
+    protected final void resetRefCnt() {
+        setRefCnt(1);
+    }
 
     @Override
     public ReferenceCounted retain() {
         return retain(1);
     }
 
-    /**
-     * @param increment 增加的数量
-     * @return
-     */
     @Override
     public ReferenceCounted retain(int increment) {
         if (increment <= 0) {
@@ -57,7 +48,6 @@ public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
         }
 
         while (!REF_CNT_UPDATER.compareAndSet(this, oldRef, nextRef)) {
-            //争锁失败之后 是需要重新写oldRef 和 nextRef的，因为refCnt有可能会被修改
             oldRef = refCnt;
             nextRef = oldRef + increment;
             if (oldRef <= 0 || nextRef < oldRef) {
@@ -69,46 +59,46 @@ public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
 
     @Override
     public boolean release() {
+        // 无参 release 等价于把引用计数减 1。
         return release(1);
     }
 
     @Override
     public boolean release(int decrement) {
+        // 第一步：decrement 必须是正数，0 或负数都属于非法调用。
         if (decrement <= 0) {
             throw new IllegalArgumentException("increment: " + decrement + " (expected: > 0)");
         }
+        // 第二步：先读取当前引用计数，作为 CAS 更新时的旧值基准。
         int oldRefCnt = refCnt;
+        // 第三步：如果本次要减掉的数量比当前引用计数还大，说明调用方多释放了。
         if (oldRefCnt < decrement) {
             throw new IllegalReferenceCountException(oldRefCnt, -decrement);
         }
 
+        // 第四步：通过 CAS 循环做无锁减计数，保证并发下只有一个线程能更新成功。
         while (!REF_CNT_UPDATER.compareAndSet(this, oldRefCnt, oldRefCnt - decrement)) {
+            // 第五步：CAS 失败说明别的线程先一步修改了 refCnt，这里重新读取最新值。
             oldRefCnt = refCnt;
+            // 第六步：读取到最新值后，再次检查是否发生了过度释放。
             if (oldRefCnt < decrement) {
                 throw new IllegalReferenceCountException(oldRefCnt, -decrement);
             }
         }
 
-        //引用计数变成0之后，就可以标记array = null 然后就会触发gc垃圾回收
+        // 第七步：如果旧引用计数刚好等于 decrement，说明这次 release 之后 refCnt 会变成 0。
         if (oldRefCnt == decrement) {
+            // 第八步：引用计数归零后，触发真正的资源释放逻辑，例如回池或丢给 GC。
             deallocate();
+            // 第九步：返回 true，表示这是最后一次释放。
             return true;
         }
+        // 第十步：返回 false，表示对象还在被其他引用持有，当前还不能真正回收。
         return false;
     }
 
-
-    /**
-     * 释放资源的模板方法
-     *
-     * <p>当引用计数变为 0 时调用，子类需要实现具体的资源释放逻辑。
-     */
     protected abstract void deallocate();
 
-
-    /**
-     * 非法引用计数异常
-     */
     public static class IllegalReferenceCountException extends IllegalStateException {
 
         public IllegalReferenceCountException(int refCnt, int increment) {
