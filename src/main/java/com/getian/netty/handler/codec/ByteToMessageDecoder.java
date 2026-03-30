@@ -53,6 +53,7 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
                 callDecode(ctx, cumulation);
             } finally {
                 if (cumulation != null && !cumulation.isReadable()) {
+                    //当cumulation中没有数据可读时，才置为null
                     cumulation.release();
                     cumulation = null;
                 }
@@ -127,7 +128,9 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
                 HeapByteBuf newByteBuf = new HeapByteBuf(cumulation.readableBytes() + required, DEFAULT_MAX_CAPACITY);
                 //2.2 复制现有的数据 然后移花接木
                 byte[] oldData = new byte[cumulation.readableBytes()];
+                //将cumulation中的数据写到oldData中
                 cumulation.readBytes(oldData);
+                //将oldData中的数据读取到newByteBuf中
                 newByteBuf.writeBytes(oldData);
 
                 cumulation.release();

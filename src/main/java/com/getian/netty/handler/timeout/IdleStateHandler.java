@@ -260,6 +260,7 @@ public class IdleStateHandler extends ChannelInboundHandlerAdapter {
      */
     private void destroy() {
         state = 2;
+        //readerIdleTimeout是监控读空闲任务的句柄 可以通过该对象来修改任务的状态
         if (readerIdleTimeout != null) {
             readerIdleTimeout.cancel(false);
             readerIdleTimeout = null;

@@ -411,7 +411,7 @@ public class HeapByteBufTest {
             buf.retain(3);
             assertThat(buf.refCnt()).isEqualTo(4);
 
-            boolean release = buf.release(5);
+            boolean release = buf.release(4);
             assertThat(release).isTrue();
 
             System.out.println(buf.refCnt());

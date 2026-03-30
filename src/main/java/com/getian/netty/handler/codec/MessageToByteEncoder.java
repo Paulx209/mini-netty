@@ -56,8 +56,10 @@ public abstract class MessageToByteEncoder<I> extends ChannelOutboundHandlerAdap
             if (acceptOutboundMessage(msg)) {
                 //因为我们outboundMessageType的类型为I，可以被处理的话，说明可以转换成I类型的变量
                 I cast = (I) msg;
+                //分配输出缓冲区
                 buf = allocateBuffer(ctx);
                 try {
+                    //编码
                     encode(ctx, cast, buf);
                 } finally {
                     //如果消息的类型为ByteBuf的话 就需要释放array
@@ -94,6 +96,7 @@ public abstract class MessageToByteEncoder<I> extends ChannelOutboundHandlerAdap
      * @return boolean
      */
     protected boolean acceptOutboundMessage(Object msg) {
+        // msg instanceOf outboundMessageType
         return outboundMessageType.isInstance(msg);
     }
 

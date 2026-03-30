@@ -238,6 +238,7 @@ public class BootstrapIntegrationTest {
                         @Override
                         public void channelActive(ChannelHandlerContext ctx) throws Exception {
                             serverConnected.set(true);
+                            //这个方法能不能执行到？
                             System.out.println("[Server] 客户端已连接");
                         }
                     });
